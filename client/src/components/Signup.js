@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import api from "../api";
 
 export default function Signup({ onSignup }) {
   const [form, setForm] = useState({
@@ -10,29 +11,32 @@ export default function Signup({ onSignup }) {
   const [message, setMessage] = useState("");
   const [welcomeName, setWelcomeName] = useState("");
 
-  const handleChange = e => {
+  const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = async e => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setMessage("");
-    // Always send role from form (user can select)
+
     const payload = { ...form, role: form.role || "user" };
-    const res = await fetch("http://localhost:5000/api/auth/register", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    const data = await res.json();
-    if (res.ok) {
-      setWelcomeName(form.name); // Save name before clearing form!
+
+    try {
+      const res = await api.post("/auth/register", payload);
+      const data = res.data;
+
+      setWelcomeName(form.name);
       setMessage("Signup successful! You can now log in.");
       setForm({ name: "", email: "", password: "", role: "user" });
-      if (onSignup) onSignup();
-    } else {
-      setWelcomeName(""); // clear welcome if error
-      setMessage(data.error || "Signup failed");
+
+      if (onSignup) onSignup(data);
+    } catch (err) {
+      setWelcomeName("");
+      const msg =
+        err.response?.data?.error ||
+        err.response?.data?.message ||
+        "Signup failed";
+      setMessage(msg);
     }
   };
 
@@ -58,7 +62,9 @@ export default function Signup({ onSignup }) {
           marginTop: 32,
         }}
       >
-        <h2 style={{ textAlign: "center", marginBottom: 24, color: "#b37cfc" }}>
+        <h2
+          style={{ textAlign: "center", marginBottom: 24, color: "#b37cfc" }}
+        >
           Sign Up
         </h2>
         <input
@@ -136,7 +142,7 @@ export default function Signup({ onSignup }) {
         >
           Sign Up
         </button>
-        {/* Error or info message */}
+
         <div
           style={{
             color: message.toLowerCase().includes("success") ? "#0f0" : "#f77",
@@ -147,7 +153,7 @@ export default function Signup({ onSignup }) {
         >
           {message}
         </div>
-        {/* Welcome message and link */}
+
         {message.toLowerCase().includes("successful") && welcomeName && (
           <div style={{ textAlign: "center", marginTop: 10 }}>
             <span style={{ color: "#b37cfc", fontWeight: "bold" }}>
@@ -155,7 +161,7 @@ export default function Signup({ onSignup }) {
             </span>
             <br />
             <a
-              href="/My-Portfolio-Full-Stack/login"
+              href="/login"
               style={{
                 color: "#b37cfc",
                 textDecoration: "underline",

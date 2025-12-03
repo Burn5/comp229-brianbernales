@@ -21,6 +21,22 @@ const Contact = lazy(() => import("./components/Contact/Contact"));
 function App() {
   const [load, updateLoad] = useState(true);
 
+  const [currentUser, setCurrentUser] = useState(
+    () => JSON.parse(localStorage.getItem("user")) || null
+  );
+
+  const handleLoginSuccess = (user, token) => {
+    setCurrentUser(user);
+    localStorage.setItem("user", JSON.stringify(user));
+    localStorage.setItem("token", token);
+  };
+
+  const handleLogout = () => {
+    setCurrentUser(null);
+    localStorage.removeItem("user");
+    localStorage.removeItem("token");
+  };
+
   useEffect(() => {
     const timer = setTimeout(() => {
       updateLoad(false);
@@ -32,7 +48,7 @@ function App() {
     <Router>
       <Pre load={load} />
       <div className="app-wrapper" id={load ? "no-scroll" : "scroll"}>
-        <Navbar />
+        <Navbar user={currentUser} onLogout={handleLogout}  />
         <ScrollToTop />
         <div className="content-wrapper">
           <Suspense fallback={<div className="text-white text-center"></div>}>

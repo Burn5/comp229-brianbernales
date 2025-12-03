@@ -1,68 +1,51 @@
 import React, { useState, useEffect } from "react";
 import { Container, Form, Button, Table, Alert } from "react-bootstrap";
 import { Helmet } from "react-helmet";
+import api from "../../api";
 
 function Contact() {
-  // Form state for user
   const [form, setForm] = useState({ name: "", email: "", message: "" });
   const [success, setSuccess] = useState("");
   const [error, setError] = useState("");
-
-  // Admin state for messages
   const [contacts, setContacts] = useState([]);
-  const isAdmin = () => localStorage.getItem("role") === "admin";
-  const token = localStorage.getItem("token");
 
-  // On mount, scroll to top
+  const isAdmin = () => localStorage.getItem("role") === "admin";
+
   useEffect(() => {
     window.scrollTo(0, 0);
-    // If admin, fetch all contacts
     if (isAdmin()) {
-      fetch("/api/contacts", {
-        headers: { Authorization: `Bearer ${token}` }
-      })
-        .then(res => res.json())
-        .then(data => setContacts(data))
+      api
+        .get("/contacts")
+        .then((res) => setContacts(res.data))
         .catch(() => setError("Failed to load messages."));
     }
-  }, [token]);
+  }, []);
 
-  // Handle input change
-  const handleChange = e => {
+  const handleChange = (e) =>
     setForm({ ...form, [e.target.name]: e.target.value });
-  };
 
-  // Handle form submit (anyone)
-  const handleSubmit = e => {
+  const handleSubmit = (e) => {
     e.preventDefault();
     setError("");
     setSuccess("");
-    fetch("/api/contacts", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form)
-    })
-      .then(res => res.json())
-      .then(data => {
+    api
+      .post("/contacts", form)
+      .then((res) => {
+        const data = res.data;
         if (data.error) setError(data.error);
         else {
           setSuccess("Message sent!");
           setForm({ name: "", email: "", message: "" });
-          // Optionally reload messages if admin
-          if (isAdmin()) setContacts(contacts => [data, ...contacts]);
+          if (isAdmin()) setContacts((prev) => [data, ...prev]);
         }
       })
       .catch(() => setError("Something went wrong!"));
   };
 
-  // Admin: delete a message
-  const handleDelete = id => {
+  const handleDelete = (id) => {
     if (!window.confirm("Delete this message?")) return;
-    fetch(`/api/contacts/${id}`, {
-      method: "DELETE",
-      headers: { Authorization: `Bearer ${token}` }
-    }).then(() =>
-      setContacts(contacts => contacts.filter(c => c._id !== id))
+    api.delete(`/contacts/${id}`).then(() =>
+      setContacts((prev) => prev.filter((c) => c._id !== id))
     );
   };
 
